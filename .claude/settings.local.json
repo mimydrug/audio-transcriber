@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm \"원고 260111 내용증명.md\")",
+      "Bash(rm \"원고 260116 한국소비자원 피해구제 신청.md\")",
+      "Bash(rm \"원고 260120 한국소비자원 피해구제 신청에 대한 답변.md\")",
+      "Bash(rm \"원고 260129 민사서류- 지급명령신청 보정서.md\")",
+      "Bash(rm \"원고 260318 준비서면.md\")",
+      "Bash(powershell -Command ':*)",
+      "Bash(dir /b \"C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki\")",
+      "Bash(powershell -Command \"Get-ChildItem 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki' -Recurse | Select-Object FullName\")",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki\\\\Projects\\\\Saamri_437_8'; New-Item -ItemType Directory -Force -Path 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki\\\\Domains'\")",
+      "Bash(powershell -Command \"Get-ChildItem 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\raw' | Select-Object Name, Length\")",
+      "Bash(powershell -Command \"Rename-Item -LiteralPath 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki\\\\Publisher Sets & Output.md' -NewName '아키캐드_퍼블리셔셋.md'\")",
+      "Bash(powershell -Command \"Rename-Item -LiteralPath 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki\\\\Projects\\\\Saamri_437_8' -NewName '사암리437.8'\")",
+      "Bash(powershell -Command \"Rename-Item -LiteralPath 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki\\\\Projects\\\\사암리437.8\\\\Overview.md' -NewName '프로젝트_개요.md'; Rename-Item -LiteralPath 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki\\\\Projects\\\\사암리437.8\\\\Design_Log.md' -NewName '설계_결정_로그.md'\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\fix_links.ps1\")",
+      "Bash(powershell -Command \"Get-Item 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki' | Select-Object FullName\")",
+      "Bash(powershell -Command \"Get-ChildItem 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\wiki' -Recurse -Filter '*.md' | Select-Object Name\")",
+      "Bash(powershell -Command \"cmd /c dir /x 'C:\\\\Users\\\\nath\\\\OneDrive\\\\' 2>&1 | Select-String -Pattern 'My_Wiki|문서|Documents'\")",
+      "Bash(powershell -Command \"cmd /c dir /x 'C:\\\\Users\\\\nath\\\\OneDrive\\\\' 2>&1\")",
+      "Bash(powershell -Command \"Remove-Item -LiteralPath 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\fix_links.ps1'\")",
+      "Bash(powershell -Command \"Remove-Item -LiteralPath 'C:\\\\Users\\\\nath\\\\OneDrive\\\\문서\\\\My_Wiki\\\\raw\\\\사암리437.8_utf8.md'\")"
+    ]
+  }
+}

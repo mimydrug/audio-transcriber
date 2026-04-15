@@ -1,0 +1,217 @@
+{
+  "main": {
+    "id": "6e420e9d58297eac",
+    "type": "split",
+    "children": [
+      {
+        "id": "c6043482fcfc622a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2bef8aa0196b1755",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "그래프 뷰"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "7662992d35dc8f7d",
+    "type": "split",
+    "children": [
+      {
+        "id": "ddd29a8afb483c95",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7a158d201ea04602",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "파일 탐색기"
+            }
+          },
+          {
+            "id": "5ad6cde80ee08cee",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "검색"
+            }
+          },
+          {
+            "id": "a5921cd544f68976",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "북마크"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "fdb3b477ff019ac8",
+    "type": "split",
+    "children": [
+      {
+        "id": "16d3f3006eb5bde3",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c2b1392e93cca926",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "백링크"
+            }
+          },
+          {
+            "id": "3e95f663223ad74b",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "나가는 링크"
+            }
+          },
+          {
+            "id": "df43d455b1378bad",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "태그"
+            }
+          },
+          {
+            "id": "64db1caf7eef3fba",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "모든 속성"
+            }
+          },
+          {
+            "id": "e32c5fa655ec2d75",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "개요"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:빠른 전환기 열기": false,
+      "graph:그래프 뷰 열기": false,
+      "canvas:새 캔버스 만들기": false,
+      "daily-notes:오늘의 일일 노트 열기": false,
+      "templates:템플릿 삽입": false,
+      "command-palette:명령어 팔레트 열기": false,
+      "bases:새 베이스 생성하기": false
+    }
+  },
+  "active": "2bef8aa0196b1755",
+  "lastOpenFiles": [
+    "wiki/관심사_맵.md",
+    "fix_links.ps1",
+    "wiki/Domains/한국건축법규.md",
+    "wiki/Domains/방수_습기제어.md",
+    "wiki/Domains/경량목구조.md",
+    "wiki/Domains/창호_유리시스템.md",
+    "wiki/Domains/외장재_레인스크린.md",
+    "wiki/Projects/사암리437.8/설계_결정_로그.md",
+    "wiki/Projects/사암리437.8/프로젝트_개요.md",
+    "wiki/Projects/사암리437.8/Overview.md",
+    "wiki/Projects/사암리437.8/Design_Log.md",
+    "wiki/Projects/사암리437.8",
+    "wiki/아키캐드_퍼블리셔셋.md",
+    "wiki/Publisher Sets & Output.md",
+    "wiki/Domains/Korean_Building_Regulations.md",
+    "wiki/Domains/Waterproofing_Moisture_Control.md",
+    "wiki/Domains/Lightweight_Timber_Construction.md",
+    "wiki/Domains/Windows_Glazing_Systems.md",
+    "wiki/Domains/External_Cladding_Rain_Screen.md",
+    "wiki/Projects/Saamri_437_8/Design_Log.md",
+    "wiki/Projects/Saamri_437_8/Overview.md",
+    "wiki/Domains",
+    "wiki/Projects/Saamri_437_8",
+    "wiki/Projects",
+    "무제.canvas",
+    "wiki/CLAUDE.md",
+    "raw/사암리437.8_utf8.md",
+    "raw/사암리437.8.md",
+    "raw/사암리4378.md",
+    "wiki/준비서면_decoded.md",
+    "wiki/준비서면.md",
+    "wiki/세션로그_20260414.md",
+    "wikiGet-ChildItem",
+    "준비서면_5차_수정_2026가소215506.docx",
+    "준비서면_5차_2026가소215506.docx"
+  ]
+}
