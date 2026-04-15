@@ -1,3 +1,4 @@
+import argparse
 import glob
 import pysrt
 import subprocess
@@ -10,7 +11,13 @@ from typing import List, Tuple, Optional
 # ---------------------------
 # SETTINGS
 # ---------------------------
+# 권장 모델 (한국어 품질 순):
+#   gemma3:27b  ← 최고 품질 (VRAM 18GB+)
+#   qwen2.5:14b ← 균형 (VRAM 10GB+)
+#   aya:8b      ← 기본값 (VRAM 6GB+)
 MODEL = "aya:8b"
+
+SRC_LANG = "auto"               # "ja" / "en" / "auto" — main()에서 갱신
 
 BATCH_SIZE = 15                 # 20~40 권장
 RETRY_PER_BATCH = 2             # 배치 전체 재시도 횟수
@@ -120,10 +127,43 @@ def ollama_run(prompt: str, timeout_sec: int) -> str:
     return out
 
 
+def detect_source_lang(path: str) -> str:
+    """SRT 파일 내용으로 소스 언어 자동 감지 (ja / en)"""
+    try:
+        subs = pysrt.open(path, encoding="utf-8")
+        sample = " ".join(s.text for s in subs[:40])
+        # 히라가나·가타카나·한자 비율로 판별
+        cjk = sum(1 for c in sample if "\u3040" <= c <= "\u9fff" or "\uff00" <= c <= "\uffef")
+        alpha = sum(1 for c in sample if c.isalpha())
+        if alpha == 0:
+            return "ja"
+        return "ja" if (cjk / alpha) > 0.25 else "en"
+    except Exception:
+        return "ja"
+
+
 def build_prompt(tagged_lines: List[str]) -> str:
     text_block = "\n".join(tagged_lines)
-    return f"""당신은 일본어 자막을 한국어로 번역하는 전문 번역가입니다.
+
+    if SRC_LANG == "en":
+        return f"""당신은 영어 자막을 한국어로 번역하는 전문 번역가입니다.
+자연스럽고 현실적인 한국어 구어체로 번역하세요. 직역을 피하고 의역을 허용합니다.
+영어 관용구·수동태는 한국어답게 풀어 쓰세요.
+
+규칙(매우 중요):
+1) 각 줄은 반드시 1:1로 대응해야 합니다.
+2) 각 줄 맨 앞의 태그 [L###]를 절대 삭제/변경하지 마세요.
+3) 출력은 번역된 줄만 그대로 출력하세요. (설명/머리말/번호 추가 금지)
+4) 줄 수와 줄바꿈 개수는 입력과 동일해야 합니다.
+
+입력:
+{text_block}
+"""
+    else:  # ja (기본)
+        return f"""당신은 일본어 자막을 한국어로 번역하는 전문 번역가입니다.
 자연스럽고 현실적인 한국어 구어체로 번역하세요. 의역을 허용합니다.
+일본어 특유의 어말 표현(ね·よ·かな 등)은 자연스러운 한국어 어미로 변환하세요.
+일본어 원문을 절대 출력에 남기지 마세요.
 
 규칙(매우 중요):
 1) 각 줄은 반드시 1:1로 대응해야 합니다.
@@ -258,7 +298,14 @@ def format_seconds(sec: float) -> str:
 # FILE PROCESS
 # ---------------------------
 def translate_srt_file(path: str) -> float:
+    global SRC_LANG
     start = time.time()
+
+    # 파일별 언어 감지 (auto 모드일 때)
+    if SRC_LANG == "auto":
+        detected = detect_source_lang(path)
+        print(f"[INFO] 소스 언어 자동 감지: {detected} ({path})")
+        SRC_LANG = detected
 
     subs = pysrt.open(path, encoding="utf-8")
     total = len(subs)
@@ -303,6 +350,25 @@ def translate_srt_file(path: str) -> float:
 
 
 def main():
+    global SRC_LANG, MODEL
+
+    ap = argparse.ArgumentParser(description="SRT 한국어 번역")
+    ap.add_argument("--lang-src", type=str, default="",
+                    help="소스 언어 (ja / en). 미입력 시 자동 감지")
+    ap.add_argument("--model", type=str, default="",
+                    help=f"Ollama 모델명 (기본: {MODEL})")
+    args = ap.parse_args()
+
+    if args.model:
+        MODEL = args.model.strip()
+
+    if args.lang_src:
+        SRC_LANG = args.lang_src.strip().lower()
+    else:
+        # CLI에서 직접 실행 시 언어 입력 요청
+        u = input("소스 언어를 입력하세요 (ja / en) [엔터=자동감지]: ").strip().lower()
+        SRC_LANG = u if u in ("ja", "en") else "auto"
+
     files = sorted(glob.glob("*.srt"))
     files = [f for f in files if not f.lower().endswith(f"{TARGET_SUFFIX}.srt")]
 

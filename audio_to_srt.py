@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-audio_to_srt v2.7.5 (Production build: SRT only by default)
+audio_to_srt v2.8.0 (Production build: SRT only by default)
 
 핵심(운영용):
 - 기본: SRT만 생성 (report/removed 파일 생성 차단)
 - PowerShell 진행바가 [FILE DONE] 로그를 덮어쓰는 문제 수정 (print()로 줄바꿈 강제)
 - 실행 파일 혼선 방지: [RUN] script path + sha256 일부 출력
-- faster-whisper로 VAD 기반 keep-ranges 추출 -> openai-whisper로 2pass 전사
+- faster-whisper(large-v3)로 VAD 기반 keep-ranges 추출 → 동일 엔진으로 beam_size=5 정밀 전사
+- 언어별 initial_prompt로 환각 억제
 - repeat collapse + anti-halluc(증거 기반 저에너지 필터)
 """
 
@@ -59,9 +60,6 @@ try:
 except Exception:
     pass
 
-import whisper  # openai-whisper
-
-DEFAULT_OW_MODEL = "base"
 DEFAULT_FW_MODEL = "large-v3"
 
 TARGET_SR = 16000
@@ -75,10 +73,9 @@ KEEP_MIN_LEN = 0.20
 MAX_CHUNK_SEC = 25.0
 CHUNK_OVERLAP_SEC = 0.40
 
+BEAM_SIZE = 5          # 전사 정확도 향상 (VAD pass는 beam_size=1 고정)
 TEMPERATURE = 0.0
 CONDITION_ON_PREV = False
-FP16 = True
-WHISPER_VERBOSE = False
 
 DROP_NO_SPEECH = 0.85
 DROP_LOGPROB = -1.2
@@ -124,6 +121,17 @@ SHORT_STRONG_LOGPROB = -1.00
 SHORT_STRONG_COMP = 3.20
 
 _REPEAT_TAG_RE = re.compile(r"\(x(\d+)\)\s*$", re.IGNORECASE)
+
+# 언어별 initial_prompt: 환각 억제 + 해당 언어 고정 유도
+_INITIAL_PROMPTS: Dict[str, str] = {
+    "ja": "これは日本語の音声です。正確に文字起こしをしてください。",
+    "ko": "이것은 한국어 음성입니다. 정확하게 받아쓰기 해주세요.",
+    "en": "This is an English audio recording. Please transcribe accurately.",
+}
+
+
+def get_initial_prompt(lang: Optional[str]) -> Optional[str]:
+    return _INITIAL_PROMPTS.get((lang or "").strip().lower())
 
 
 @contextmanager
@@ -785,7 +793,6 @@ def save_removed_reports(removed: List[RemovedItem], base_out_srt: Path) -> None
 
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(add_help=True)
-    ap.add_argument("--ow-model", type=str, default=DEFAULT_OW_MODEL)
     ap.add_argument("--fw-model", type=str, default=DEFAULT_FW_MODEL)
 
     # 운영 기본값
@@ -837,8 +844,6 @@ def main() -> None:
         print("[ERROR] No media files found in current folder.", file=sys.stderr)
         sys.exit(1)
 
-    ow_model = whisper.load_model(args.ow_model.strip() or DEFAULT_OW_MODEL)
-
     from faster_whisper import WhisperModel  # type: ignore
     device = "cuda"
     try:
@@ -862,7 +867,7 @@ def main() -> None:
         fw_model = WhisperModel(args.fw_model.strip() or DEFAULT_FW_MODEL, device="cpu", compute_type="int8")
 
     report_rows: List[Dict[str, str]] = []
-    report_path = Path.cwd() / f"_transcribe_report_v2.7.5_{int(time.time())}.csv"
+    report_path = Path.cwd() / f"_transcribe_report_v2.8.0_{int(time.time())}.csv"
 
     total_files = len(inputs)
     done_files = 0
@@ -871,7 +876,7 @@ def main() -> None:
     print(
         f"\n[CONFIG] anti_halluc={anti} preserve_vocals={preserve_vocals} "
         f"save_removed={save_removed} report={write_report} low_dbfs_q={ADAPTIVE_LOW_DBFS_QUANTILE} "
-        f"lang={user_lang or 'auto'} ow={args.ow_model} fw={args.fw_model} device={device}\n"
+        f"lang={user_lang or 'auto'} fw={args.fw_model} beam_size={BEAM_SIZE} device={device}\n"
     )
 
     for p in inputs:
@@ -926,36 +931,44 @@ def main() -> None:
                 extract_clip(wav16k, clip, start=s, end=e)
 
                 with suppress_console_output(True):
-                    result = ow_model.transcribe(
+                    seg_gen, _ = fw_model.transcribe(
                         str(clip),
                         language=lang_for_pass2,
                         task="transcribe",
-                        fp16=FP16,
+                        beam_size=BEAM_SIZE,
                         temperature=TEMPERATURE,
                         condition_on_previous_text=CONDITION_ON_PREV,
-                        verbose=WHISPER_VERBOSE,
+                        initial_prompt=get_initial_prompt(lang_for_pass2),
+                        word_timestamps=False,
+                        vad_filter=False,
+                        compression_ratio_threshold=2.4,
+                        log_prob_threshold=-1.0,
+                        no_speech_threshold=0.6,
                     )
+                    fw_segs = list(seg_gen)
 
-                for seg in result.get("segments", []):
+                for seg in fw_segs:
                     seg_raw += 1
-                    ss = float(seg["start"]) + s
-                    ee = float(seg["end"]) + s
-                    txt = str(seg.get("text", "")).strip()
+                    ss = float(getattr(seg, "start", 0.0)) + s
+                    ee = float(getattr(seg, "end", ss)) + s
+                    txt = str(getattr(seg, "text", "")).strip()
                     if not txt:
                         gating_dropped += 1
                         if save_removed:
                             removed_all.append(RemovedItem(ss, ee, txt, "metrics:empty", "metrics",
-                                                          no_speech_prob=seg.get("no_speech_prob"), avg_logprob=seg.get("avg_logprob"),
-                                                          compression_ratio=seg.get("compression_ratio"), dbfs=None))
+                                                          no_speech_prob=getattr(seg, "no_speech_prob", None),
+                                                          avg_logprob=getattr(seg, "avg_logprob", None),
+                                                          compression_ratio=getattr(seg, "compression_ratio", None),
+                                                          dbfs=None))
                         continue
 
                     obj = Seg(
                         start=ss,
                         end=ee if ee > ss else ss + 0.2,
                         text=txt,
-                        no_speech_prob=seg.get("no_speech_prob", None),
-                        avg_logprob=seg.get("avg_logprob", None),
-                        compression_ratio=seg.get("compression_ratio", None),
+                        no_speech_prob=getattr(seg, "no_speech_prob", None),
+                        avg_logprob=getattr(seg, "avg_logprob", None),
+                        compression_ratio=getattr(seg, "compression_ratio", None),
                     )
 
                     drop, reason = should_drop_by_metrics(obj, preserve_vocals=preserve_vocals)
@@ -1042,7 +1055,7 @@ def main() -> None:
     elapsed = time.perf_counter() - start_all
     print(
         f"\n[DONE] {total_files} files in {elapsed/60:.1f} min | anti={anti} preserve_vocals={preserve_vocals} | "
-        f"low_dbfs_q={ADAPTIVE_LOW_DBFS_QUANTILE} ow={args.ow_model} fw={args.fw_model} | "
+        f"low_dbfs_q={ADAPTIVE_LOW_DBFS_QUANTILE} fw={args.fw_model} beam_size={BEAM_SIZE} | "
         f"lang={(user_lang or 'auto')}\n"
     )
 
