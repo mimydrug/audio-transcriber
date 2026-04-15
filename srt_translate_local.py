@@ -102,6 +102,31 @@ def collapse_repetitions(text: str, max_repeat: int = 3) -> str:
 
 
 # ---------------------------
+# KOREAN POST-PROCESSING
+# ---------------------------
+# 히라가나·가타카나 범위
+_KANA_RE = re.compile(r'[\u3040-\u30ff\uff65-\uff9f]+')
+# 문장 끝 불필요 공백
+_TRAIL_RE = re.compile(r'[ \t]+$', re.MULTILINE)
+
+
+def postprocess_korean(text: str) -> str:
+    """번역 결과 한국어 후처리"""
+    if not text:
+        return text
+    # 1) 일본어 가나 잔류 제거 (번역 누락 시 원문이 섞이는 경우)
+    text = _KANA_RE.sub('', text)
+    # 2) 줄 끝 공백 제거
+    text = _TRAIL_RE.sub('', text)
+    # 3) 연속 공백 정규화
+    text = re.sub(r'[ \t]{2,}', ' ', text)
+    # 4) 번역기가 자주 생성하는 불필요한 따옴표 쌍 제거 (예: "안녕" → 안녕)
+    #    단, 대화체 인용은 유지하므로 문장 전체가 따옴표로 감싸진 경우만 처리
+    text = re.sub(r'^"(.+)"$', r'\1', text.strip())
+    return text.strip()
+
+
+# ---------------------------
 # OLLAMA CALL (timeout + retry)
 # ---------------------------
 def ollama_run(prompt: str, timeout_sec: int) -> str:
@@ -257,9 +282,10 @@ def translate_batch(lines: List[str]) -> List[str]:
         # 평가: 빈 줄이 너무 많으면 재시도
         empties = sum(1 for t in translated if not t.strip())
         if empties <= max(1, len(lines) // 10):
-            # 출력 축약(선택)
             if ENABLE_COLLAPSE:
                 translated = [collapse_repetitions(t, MAX_REPEAT) for t in translated]
+            # 한국어 후처리
+            translated = [postprocess_korean(t) for t in translated]
             # 최종: 그래도 빈 건 원문 유지
             final = [translated[i] if translated[i].strip() else lines[i] for i in range(len(lines))]
             return final
@@ -271,6 +297,7 @@ def translate_batch(lines: List[str]) -> List[str]:
                 final.append(t if t.strip() else lines[i])
             if ENABLE_COLLAPSE:
                 final = [collapse_repetitions(t, MAX_REPEAT) for t in final]
+            final = [postprocess_korean(t) for t in final]
             return final
 
         # 다음 시도 전에 약간 쉬기(너무 빠르게 재요청하면 불안정할 때)
@@ -301,11 +328,11 @@ def translate_srt_file(path: str) -> float:
     global SRC_LANG
     start = time.time()
 
-    # 파일별 언어 감지 (auto 모드일 때)
+    # 파일별 언어 결정 — auto 모드면 매 파일마다 새로 감지 후 복원
+    _saved_lang = SRC_LANG
     if SRC_LANG == "auto":
-        detected = detect_source_lang(path)
-        print(f"[INFO] 소스 언어 자동 감지: {detected} ({path})")
-        SRC_LANG = detected
+        SRC_LANG = detect_source_lang(path)
+        print(f"[INFO] 소스 언어 자동 감지: {SRC_LANG} ({path})")
 
     subs = pysrt.open(path, encoding="utf-8")
     total = len(subs)
@@ -345,7 +372,9 @@ def translate_srt_file(path: str) -> float:
     subs.save(out_path, encoding="utf-8")
 
     elapsed = time.time() - start
-    print(f"[DONE] {path} -> {out_path} | {format_seconds(elapsed)}")
+    print(f"[DONE] {path} -> {out_path} | lang={SRC_LANG} | {format_seconds(elapsed)}")
+
+    SRC_LANG = _saved_lang   # 다음 파일을 위해 복원 (auto 모드 유지)
     return elapsed
 
 
